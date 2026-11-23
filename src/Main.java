@@ -9,88 +9,96 @@ import java.util.Scanner;
 
 public class Main {
     private static final Random random = new Random();
+    private static final int maxMistakes = 6;
 
     public static void main(String[] args) {
-      Path dictionaryPath = Path.of("src/words.txt");
-      String secretWord;
+        Path dictionaryPath = Path.of("src/words.txt");
+        String secretWord;
 
-      try {
-          secretWord = pickRandomWord(dictionaryPath);
-      } catch (IOException e){
-          System.out.println("Не удалось прочитать словарь из файла: " + dictionaryPath);
-          return;
-      }
-        char[] guessedWord = new char[secretWord.length()];
+        try {
+            secretWord = pickRandomWord(dictionaryPath);
+        } catch (IOException e) {
+            System.out.println("Не удалось прочитать словарь из файла: " + dictionaryPath);
+            return;
+        }
+        playGame(secretWord);
+    }
 
-        Arrays.fill(guessedWord, '*');
-        int maxMistakes = 6;
+    private static void playGame(String secretWord) {
+        char[] guessedWord = createMaskedWord(secretWord);
         int currentMistakes = 0;
         System.out.println("Добро пожаловать в гэмбл");
-        System.out.println("Слово: ");
-        System.out.println(guessedWord);
+        System.out.println("Слово: " + new String(guessedWord));
 
+        Scanner scanner = new Scanner(System.in);
 
-        Scanner Scaner = new Scanner(System.in);
         while (currentMistakes < maxMistakes) {
             System.out.println("\nВведите букву: ");
-
-
-            String input = Scaner.nextLine().toUpperCase();
-            char letter = input.charAt(0);
-
-            boolean isHit = false;
-            for (int i = 0; i < secretWord.length(); i++) {
-                if (secretWord.charAt(i) == letter) {
-                    guessedWord[i] = letter;
-                    isHit = true;
-
-                }
+            String input = scanner.nextLine().trim().toUpperCase();
+            if (input.isEmpty()) {
+                continue;
             }
+            char letter = input.charAt(0);
+            boolean isHit = revealLetter(secretWord, guessedWord, letter);
+
             if (!isHit) {
                 currentMistakes++;
-                System.out.println("Ты не попал! Ошибок: " + currentMistakes + "из" + maxMistakes);
+                System.out.println("Ты не попал! Ошибок: " + currentMistakes + " из " + maxMistakes);
             } else {
                 System.out.println("Попал! Такая буква есть!");
             }
-            System.out.println("Слово: ");
-            System.out.println(guessedWord);
 
-            boolean isWin = true;
-            for (char c : guessedWord) {
-                if (c == '*') {
-                    isWin = false;
-                    break;
-                }
+            System.out.println("Слово: " + new String(guessedWord));
+
+            if (isWordGuessed(guessedWord)) {
+                System.out.println("\nПоздравляю, ты выиграл!");
+                System.out.println("Загаданное слово: " + secretWord);
+                scanner.close();
+                return;
             }
-
-                if (isWin) {
-                    System.out.println("\nПоздравляю ты выиграл!");
-                    System.out.println("Загаданное слово: " + secretWord);
-                    break;
-                }
-
         }
-
-
-        if (currentMistakes == maxMistakes){
-            System.out.println("\nТы проиграл! У тебя не осталось жизней. Загаданное слово: " + secretWord);
-        }
-        Scaner.close();
-
-
+        System.out.println("\nТы проиграл! У тебя не осталось жизней. Загаданное слово: " + secretWord);
+        scanner.close();
     }
+
+    private static char[] createMaskedWord(String secretWord) {
+        char[] masked = new char[secretWord.length()];
+        Arrays.fill(masked, '*');
+        return masked;
+    }
+
+    private static boolean revealLetter(String secretWord, char[] guessedWord, char letter) {
+        boolean isHit = false;
+        for (int i = 0; i < secretWord.length(); i++) {
+            if (secretWord.charAt(i) == letter) {
+                guessedWord[i] = letter;
+                isHit = true;
+            }
+        }
+        return isHit;
+    }
+
+    private static boolean isWordGuessed(char[] guessedWord) {
+        for (char c : guessedWord) {
+            if (c == '*') {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static String pickRandomWord(Path path) throws IOException {
         List<String> words = Files.readAllLines(path, StandardCharsets.UTF_8).stream()
                 .map(String::trim)
                 .filter(word -> !word.isEmpty())
                 .toList();
-        if (words.isEmpty()){
-            throw new IOException("Файл пуст: "+ path);
 
+        if (words.isEmpty()) {
+            throw new IOException("Файл словаря пуст: " + path);
         }
+
         int randomIndex = random.nextInt(words.size());
         return words.get(randomIndex).toUpperCase();
     }
-
-
 }
+
