@@ -1,14 +1,28 @@
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
+    private static final Random random = new Random();
 
-        String secretWord = "СТОШКА";
+    public static void main(String[] args) {
+      Path dictionaryPath = Path.of("src/words.txt");
+      String secretWord;
+
+      try {
+          secretWord = pickRandomWord(dictionaryPath);
+      } catch (IOException e){
+          System.out.println("Не удалось прочитать словарь из файла: " + dictionaryPath);
+          return;
+      }
         char[] guessedWord = new char[secretWord.length()];
 
-        for (int i = 0; i < guessedWord.length; i++) {
-            guessedWord[i] = '*';
-        }
+        Arrays.fill(guessedWord, '*');
         int maxMistakes = 6;
         int currentMistakes = 0;
         System.out.println("Добро пожаловать в гэмбл");
@@ -32,7 +46,7 @@ public class Main {
 
                 }
             }
-            if (isHit == false) {
+            if (!isHit) {
                 currentMistakes++;
                 System.out.println("Ты не попал! Ошибок: " + currentMistakes + "из" + maxMistakes);
             } else {
@@ -42,14 +56,14 @@ public class Main {
             System.out.println(guessedWord);
 
             boolean isWin = true;
-            for (int i = 0; i < guessedWord.length; i++) {
-                if (guessedWord[i] == '*') {
+            for (char c : guessedWord) {
+                if (c == '*') {
                     isWin = false;
                     break;
                 }
             }
 
-                if (isWin == true) {
+                if (isWin) {
                     System.out.println("\nПоздравляю ты выиграл!");
                     System.out.println("Загаданное слово: " + secretWord);
                     break;
@@ -65,4 +79,18 @@ public class Main {
 
 
     }
+    private static String pickRandomWord(Path path) throws IOException {
+        List<String> words = Files.readAllLines(path, StandardCharsets.UTF_8).stream()
+                .map(String::trim)
+                .filter(word -> !word.isEmpty())
+                .toList();
+        if (words.isEmpty()){
+            throw new IOException("Файл пуст: "+ path);
+
+        }
+        int randomIndex = random.nextInt(words.size());
+        return words.get(randomIndex).toUpperCase();
+    }
+
+
 }
